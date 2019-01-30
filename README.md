@@ -33,4 +33,6 @@ But this means that you will need to recreate that `files` directory outside you
 Similar to the issue with the `uploads` directory, you will need to store your `.env` outside the project root on the
 Pantheon server. The bedrock application configuration loader [was updated](https://github.com/carlalexander/pantheon-bedrock/commit/70ba9d4e5100fb7fd95e1b6976bd8679887cb339)
 to look for the `.env` file in the `files` directory where Pantheon stores all your uploaded files. Due to the custom 
-nature of that setup, you will need to manage the `.env` file via SFTP.
+nature of that setup, you will need to manage the `.env` file via SFTP. 
+
+When uploading the `.env` directory to Pantheon it should be placed in a subdirectory named `private` within the `files` directory. This will ensure the `.env` file is not web accessible to the public. See [the private paths documentation article](https://pantheon.io/docs/private-paths/#private-path-for-files) for more details on how to incorporate non-web-accessible data on Pantheon's platform.
