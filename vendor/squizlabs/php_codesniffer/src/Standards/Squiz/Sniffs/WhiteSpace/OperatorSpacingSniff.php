@@ -41,17 +41,13 @@ class OperatorSpacingSniff implements Sniff
      */
     public function register()
     {
-        $comparison = Tokens::$comparisonTokens;
-        $operators  = Tokens::$operators;
-        $assignment = Tokens::$assignmentTokens;
-        $inlineIf   = [
-            T_INLINE_THEN,
-            T_INLINE_ELSE,
-        ];
+        $targets   = Tokens::$comparisonTokens;
+        $targets  += Tokens::$operators;
+        $targets  += Tokens::$assignmentTokens;
+        $targets[] = T_INLINE_THEN;
+        $targets[] = T_INLINE_ELSE;
 
-        return array_unique(
-            array_merge($comparison, $operators, $assignment, $inlineIf)
-        );
+        return $targets;
 
     }//end register()
 
@@ -332,6 +328,7 @@ class OperatorSpacingSniff implements Sniff
                 T_INLINE_THEN         => true,
                 T_INLINE_ELSE         => true,
                 T_CASE                => true,
+                T_OPEN_CURLY_BRACKET  => true,
             ];
 
             if (isset($invalidTokens[$tokens[$prev]['code']]) === true) {

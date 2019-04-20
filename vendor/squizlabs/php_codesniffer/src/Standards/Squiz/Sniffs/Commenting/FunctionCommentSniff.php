@@ -38,12 +38,8 @@ class FunctionCommentSniff extends PEARFunctionCommentSniff
     protected function processReturn(File $phpcsFile, $stackPtr, $commentStart)
     {
         $tokens = $phpcsFile->getTokens();
-
-        // Skip constructor and destructor.
-        $methodName      = $phpcsFile->getDeclarationName($stackPtr);
-        $isSpecialMethod = ($methodName === '__construct' || $methodName === '__destruct');
-
         $return = null;
+
         foreach ($tokens[$commentStart]['comment_tags'] as $tag) {
             if ($tokens[$tag]['content'] === '@return') {
                 if ($return !== null) {
@@ -56,6 +52,9 @@ class FunctionCommentSniff extends PEARFunctionCommentSniff
             }
         }
 
+        // Skip constructor and destructor.
+        $methodName      = $phpcsFile->getDeclarationName($stackPtr);
+        $isSpecialMethod = ($methodName === '__construct' || $methodName === '__destruct');
         if ($isSpecialMethod === true) {
             return;
         }
@@ -79,7 +78,7 @@ class FunctionCommentSniff extends PEARFunctionCommentSniff
                 $suggestedNames = [];
                 foreach ($typeNames as $i => $typeName) {
                     $suggestedName = Common::suggestType($typeName);
-                    if (in_array($suggestedName, $suggestedNames) === false) {
+                    if (in_array($suggestedName, $suggestedNames, true) === false) {
                         $suggestedNames[] = $suggestedName;
                     }
                 }
@@ -320,7 +319,7 @@ class FunctionCommentSniff extends PEARFunctionCommentSniff
                             if ($tokens[$i]['code'] === T_DOC_COMMENT_STRING) {
                                 $indent = 0;
                                 if ($tokens[($i - 1)]['code'] === T_DOC_COMMENT_WHITESPACE) {
-                                    $indent = strlen($tokens[($i - 1)]['content']);
+                                    $indent = $tokens[($i - 1)]['length'];
                                 }
 
                                 $comment       .= ' '.$tokens[$i]['content'];
@@ -398,7 +397,7 @@ class FunctionCommentSniff extends PEARFunctionCommentSniff
                     $suggestedTypeHint = 'callable';
                 } else if (strpos($suggestedName, 'callback') !== false) {
                     $suggestedTypeHint = 'callable';
-                } else if (in_array($suggestedName, Common::$allowedTypes) === false) {
+                } else if (in_array($suggestedName, Common::$allowedTypes, true) === false) {
                     $suggestedTypeHint = $suggestedName;
                 }
 
@@ -549,7 +548,7 @@ class FunctionCommentSniff extends PEARFunctionCommentSniff
             // Check number of spaces after the var name.
             $this->checkSpacingAfterParamName($phpcsFile, $param, $maxVar);
 
-            // Param comments must start with a capital letter and end with the full stop.
+            // Param comments must start with a capital letter and end with a full stop.
             if (preg_match('/^(\p{Ll}|\P{L})/u', $param['comment']) === 1) {
                 $error = 'Parameter comment must start with a capital letter';
                 $phpcsFile->addError($error, $param['tag'], 'ParamCommentNotCapital');

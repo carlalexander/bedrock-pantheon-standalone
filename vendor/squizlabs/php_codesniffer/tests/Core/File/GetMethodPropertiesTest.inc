@@ -1,5 +1,4 @@
 <?php
-/* phpcs:ignoreFile */
 
 /* testBasicFunction */
 function myFunction() {}
@@ -55,3 +54,8 @@ abstract class MyClass
     abstract protected function myFunction(): bool;
 }
 
+interface MyInterface
+{
+    /* testInterfaceMethod */
+    function myFunction();
+}

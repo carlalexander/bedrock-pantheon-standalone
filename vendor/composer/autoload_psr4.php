@@ -6,6 +6,7 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
+    'Symfony\\Polyfill\\Ctype\\' => array($vendorDir . '/symfony/polyfill-ctype'),
     'Roots\\WPConfig\\' => array($vendorDir . '/roots/wp-config/src'),
     'Roots\\Composer\\' => array($vendorDir . '/roots/wordpress-core-installer/src'),
     'Dotenv\\' => array($vendorDir . '/vlucas/phpdotenv/src'),

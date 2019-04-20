@@ -64,7 +64,7 @@ abstract class AbstractVariableSniff extends AbstractScopeSniff
 
 
     /**
-     * Processes the token in the specified PHP_CodeSniffer_File.
+     * Processes the token in the specified PHP_CodeSniffer\Files\File.
      *
      * @param \PHP_CodeSniffer\Files\File $phpcsFile The PHP_CodeSniffer file where this
      *                                               token was found.
@@ -73,7 +73,7 @@ abstract class AbstractVariableSniff extends AbstractScopeSniff
      *
      * @return void|int Optionally returns a stack pointer. The sniff will not be
      *                  called again on the current file until the returned stack
-     *                  pointer is reached. Return (count($tokens) + 1) to skip
+     *                  pointer is reached. Return ($phpcsFile->numTokens + 1) to skip
      *                  the rest of the file.
      */
     final protected function processTokenWithinScope(File $phpcsFile, $stackPtr, $currScope)
@@ -92,7 +92,7 @@ abstract class AbstractVariableSniff extends AbstractScopeSniff
             return;
         }
 
-        // If this token is inside nested inside a function at a deeper
+        // If this token is nested inside a function at a deeper
         // level than the current OO scope that was found, it's a normal
         // variable and not a member var.
         $conditions = array_reverse($tokens[$stackPtr]['conditions'], true);
@@ -119,7 +119,7 @@ abstract class AbstractVariableSniff extends AbstractScopeSniff
         if ($inFunction === false && isset($tokens[$stackPtr]['nested_parenthesis']) === true) {
             foreach ($tokens[$stackPtr]['nested_parenthesis'] as $opener => $closer) {
                 if (isset($tokens[$opener]['parenthesis_owner']) === false) {
-                    // Check if this is a USE statement in a closure.
+                    // Check if this is a USE statement for a closure.
                     $prev = $phpcsFile->findPrevious(Tokens::$emptyTokens, ($opener - 1), null, true);
                     if ($tokens[$prev]['code'] === T_USE) {
                         $inFunction = true;
@@ -157,7 +157,7 @@ abstract class AbstractVariableSniff extends AbstractScopeSniff
      *
      * @return void|int Optionally returns a stack pointer. The sniff will not be
      *                  called again on the current file until the returned stack
-     *                  pointer is reached. Return (count($tokens) + 1) to skip
+     *                  pointer is reached. Return ($phpcsFile->numTokens + 1) to skip
      *                  the rest of the file.
      */
     final protected function processTokenOutsideScope(File $phpcsFile, $stackPtr)
@@ -188,7 +188,7 @@ abstract class AbstractVariableSniff extends AbstractScopeSniff
      *
      * @return void|int Optionally returns a stack pointer. The sniff will not be
      *                  called again on the current file until the returned stack
-     *                  pointer is reached. Return (count($tokens) + 1) to skip
+     *                  pointer is reached. Return ($phpcsFile->numTokens + 1) to skip
      *                  the rest of the file.
      */
     abstract protected function processMemberVar(File $phpcsFile, $stackPtr);
@@ -203,7 +203,7 @@ abstract class AbstractVariableSniff extends AbstractScopeSniff
      *
      * @return void|int Optionally returns a stack pointer. The sniff will not be
      *                  called again on the current file until the returned stack
-     *                  pointer is reached. Return (count($tokens) + 1) to skip
+     *                  pointer is reached. Return ($phpcsFile->numTokens + 1) to skip
      *                  the rest of the file.
      */
     abstract protected function processVariable(File $phpcsFile, $stackPtr);
@@ -222,7 +222,7 @@ abstract class AbstractVariableSniff extends AbstractScopeSniff
      *
      * @return void|int Optionally returns a stack pointer. The sniff will not be
      *                  called again on the current file until the returned stack
-     *                  pointer is reached. Return (count($tokens) + 1) to skip
+     *                  pointer is reached. Return ($phpcsFile->numTokens + 1) to skip
      *                  the rest of the file.
      */
     abstract protected function processVariableInString(File $phpcsFile, $stackPtr);

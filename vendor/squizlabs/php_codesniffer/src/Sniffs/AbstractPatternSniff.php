@@ -153,7 +153,7 @@ abstract class AbstractPatternSniff implements Sniff
      *
      * @return int The position in the pattern that this test should register
      *             as the listener.
-     * @throws RuntimeException If we could not determine a token to listen for.
+     * @throws \PHP_CodeSniffer\Exceptions\RuntimeException If we could not determine a token to listen for.
      */
     private function getListenerTokenPos($pattern)
     {
@@ -195,7 +195,7 @@ abstract class AbstractPatternSniff implements Sniff
 
         $tokens = $phpcsFile->getTokens();
 
-        if (in_array($tokens[$stackPtr]['code'], $this->supplementaryTokens) === true) {
+        if (in_array($tokens[$stackPtr]['code'], $this->supplementaryTokens, true) === true) {
             $this->processSupplementary($phpcsFile, $stackPtr);
         }
 
@@ -260,10 +260,9 @@ abstract class AbstractPatternSniff implements Sniff
         $errors      = [];
         $found       = '';
 
-        $ignoreTokens = [T_WHITESPACE];
+        $ignoreTokens = [T_WHITESPACE => T_WHITESPACE];
         if ($this->ignoreComments === true) {
-            $ignoreTokens
-                = array_merge($ignoreTokens, Tokens::$commentTokens);
+            $ignoreTokens += Tokens::$commentTokens;
         }
 
         $origStackPtr = $stackPtr;
@@ -785,7 +784,7 @@ abstract class AbstractPatternSniff implements Sniff
                 $specialPattern = $this->createSkipPattern($pattern, ($i - 1));
                 $lastToken      = ($i - $firstToken);
                 $firstToken     = ($i + 3);
-                $i = ($i + 2);
+                $i += 2;
 
                 if ($specialPattern['to'] !== 'unknown') {
                     $firstToken++;
@@ -794,12 +793,12 @@ abstract class AbstractPatternSniff implements Sniff
                 $specialPattern = ['type' => 'string'];
                 $lastToken      = ($i - $firstToken);
                 $firstToken     = ($i + 3);
-                $i = ($i + 2);
+                $i += 2;
             } else if (substr($pattern, $i, 3) === 'EOL') {
                 $specialPattern = ['type' => 'newline'];
                 $lastToken      = ($i - $firstToken);
                 $firstToken     = ($i + 3);
-                $i = ($i + 2);
+                $i += 2;
             }//end if
 
             if ($specialPattern !== false || $isLastChar === true) {

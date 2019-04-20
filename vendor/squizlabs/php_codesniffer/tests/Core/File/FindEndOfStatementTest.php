@@ -76,7 +76,7 @@ class FindEndOfStatementTest extends TestCase
 
 
     /**
-     * Test a direct call to a control strucutre.
+     * Test a direct call to a control structure.
      *
      * @return void
      */
@@ -145,7 +145,7 @@ class FindEndOfStatementTest extends TestCase
      */
     public function testSwitch()
     {
-        // Find the end of the swtich.
+        // Find the end of the switch.
         $start = ($this->phpcsFile->findNext(T_COMMENT, 0, null, false, '/* testSwitch */') + 2);
         $found = $this->phpcsFile->findEndOfStatement($start);
 

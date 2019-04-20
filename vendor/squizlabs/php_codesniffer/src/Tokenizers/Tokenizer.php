@@ -37,6 +37,27 @@ abstract class Tokenizer
     protected $tokens = [];
 
     /**
+     * The number of tokens in the tokens array.
+     *
+     * @var integer
+     */
+    protected $numTokens = 0;
+
+    /**
+     * A list of tokens that are allowed to open a scope.
+     *
+     * @var array
+     */
+    public $scopeOpeners = [];
+
+    /**
+     * A list of tokens that end the scope.
+     *
+     * @var array
+     */
+    public $endScopeTokens = [];
+
+    /**
      * Known lengths of tokens.
      *
      * @var array<int, int>
@@ -59,7 +80,7 @@ abstract class Tokenizer
      * @param string                         $eolChar The EOL char used in the content.
      *
      * @return void
-     * @throws TokenizerException If the file appears to be minified.
+     * @throws \PHP_CodeSniffer\Exceptions\TokenizerException If the file appears to be minified.
      */
     public function __construct($content, $config, $eolChar='\n')
     {
@@ -87,7 +108,7 @@ abstract class Tokenizer
     /**
      * Checks the content to see if it looks minified.
      *
-     * @param string $content The content to tokenize,
+     * @param string $content The content to tokenize.
      * @param string $eolChar The EOL char used in the content.
      *
      * @return boolean
@@ -163,7 +184,7 @@ abstract class Tokenizer
         $encoding         = $this->config->encoding;
         $tabWidth         = $this->config->tabWidth;
 
-        $this->tokensWithTabs = [
+        $tokensWithTabs = [
             T_WHITESPACE               => true,
             T_COMMENT                  => true,
             T_DOC_COMMENT              => true,
@@ -186,7 +207,7 @@ abstract class Tokenizer
                 $length      = $this->knownLengths[$this->tokens[$i]['code']];
                 $currColumn += $length;
             } else if ($tabWidth === 0
-                || isset($this->tokensWithTabs[$this->tokens[$i]['code']]) === false
+                || isset($tokensWithTabs[$this->tokens[$i]['code']]) === false
                 || strpos($this->tokens[$i]['content'], "\t") === false
             ) {
                 // There are no tabs in this content, or we aren't replacing them.
@@ -369,6 +390,17 @@ abstract class Tokenizer
                             $this->ignoredLines[$this->tokens[$i]['line']] = ['.all' => true];
                         }
 
+                        // Need to maintain case here, to get the correct sniff code.
+                        $parts = explode(' ', substr($commentText, 10));
+                        if (count($parts) >= 2) {
+                            $sniffParts = explode('.', $parts[0]);
+                            if (count($sniffParts) >= 3) {
+                                $this->tokens[$i]['sniffCode']          = array_shift($parts);
+                                $this->tokens[$i]['sniffProperty']      = array_shift($parts);
+                                $this->tokens[$i]['sniffPropertyValue'] = rtrim(implode(' ', $parts), " */\r\n");
+                            }
+                        }
+
                         $this->tokens[$i]['code'] = T_PHPCS_SET;
                         $this->tokens[$i]['type'] = 'T_PHPCS_SET';
                     } else if (substr($commentTextLower, 0, 16) === 'phpcs:ignorefile') {
@@ -502,7 +534,7 @@ abstract class Tokenizer
                         }
 
                         if ($lineHasOtherContent === false) {
-                            // Completely ignore the comment line, and set the folllowing
+                            // Completely ignore the comment line, and set the following
                             // line to include the ignore rules we've set.
                             $this->ignoredLines[$this->tokens[$i]['line']]       = ['.all' => true];
                             $this->ignoredLines[($this->tokens[$i]['line'] + 1)] = $ignoreRules;
@@ -1078,6 +1110,30 @@ abstract class Tokenizer
                         continue;
                     }//end if
 
+                    if ($tokenType === T_CLASS) {
+                        // Probably an anonymous class inside another anonymous class,
+                        // so process it manually.
+                        if (PHP_CODESNIFFER_VERBOSITY > 1) {
+                            $type = $this->tokens[$stackPtr]['type'];
+                            echo str_repeat("\t", $depth);
+                            echo "=> Found class before scope opener for $stackPtr:$type, processing manually".PHP_EOL;
+                        }
+
+                        if (isset($this->tokens[$i]['scope_closer']) === true) {
+                            // We've already processed this anon class.
+                            if (PHP_CODESNIFFER_VERBOSITY > 1) {
+                                echo str_repeat("\t", $depth);
+                                echo '* already processed, skipping *'.PHP_EOL;
+                            }
+
+                            $i = $this->tokens[$i]['scope_closer'];
+                            continue;
+                        }
+
+                        $i = self::recurseScopeMap($i, ($depth + 1), $ignore);
+                        continue;
+                    }//end if
+
                     // Found another opening condition but still haven't
                     // found our opener, so we are never going to find one.
                     if (PHP_CODESNIFFER_VERBOSITY > 1) {
@@ -1348,7 +1404,7 @@ abstract class Tokenizer
      *
      * The level map adds a 'level' index to each token which indicates the
      * depth that a token within a set of scope blocks. It also adds a
-     * 'condition' index which is an array of the scope conditions that opened
+     * 'conditions' index which is an array of the scope conditions that opened
      * each of the scopes - position 0 being the first scope opener.
      *
      * @return void

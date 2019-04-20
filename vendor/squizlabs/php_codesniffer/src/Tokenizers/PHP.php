@@ -266,7 +266,7 @@ class PHP extends Tokenizer
      * A list of tokens that end the scope.
      *
      * This array is just a unique collection of the end tokens
-     * from the _scopeOpeners array. The data is duplicated here to
+     * from the scopeOpeners array. The data is duplicated here to
      * save time during parsing of the file.
      *
      * @var array
@@ -504,7 +504,9 @@ class PHP extends Tokenizer
                 echo ": $type => $content";
             }//end if
 
-            if ($newStackPtr > 0 && $finalTokens[($newStackPtr - 1)]['code'] !== T_WHITESPACE) {
+            if ($newStackPtr > 0
+                && isset(Util\Tokens::$emptyTokens[$finalTokens[($newStackPtr - 1)]['code']]) === false
+            ) {
                 $lastNotEmptyToken = ($newStackPtr - 1);
             }
 
@@ -636,6 +638,37 @@ class PHP extends Tokenizer
             }//end if
 
             /*
+                Detect binary casting and assign the casts their own token.
+            */
+
+            if ($tokenIsArray === true
+                && $token[0] === T_CONSTANT_ENCAPSED_STRING
+                && (substr($token[1], 0, 2) === 'b"'
+                || substr($token[1], 0, 2) === "b'")
+            ) {
+                $finalTokens[$newStackPtr] = [
+                    'code'    => T_BINARY_CAST,
+                    'type'    => 'T_BINARY_CAST',
+                    'content' => 'b',
+                ];
+                $newStackPtr++;
+                $token[1] = substr($token[1], 1);
+            }
+
+            if ($tokenIsArray === true
+                && $token[0] === T_STRING_CAST
+                && preg_match('`^\(\s*binary\s*\)$`i', $token[1]) === 1
+            ) {
+                $finalTokens[$newStackPtr] = [
+                    'code'    => T_BINARY_CAST,
+                    'type'    => 'T_BINARY_CAST',
+                    'content' => $token[1],
+                ];
+                $newStackPtr++;
+                continue;
+            }
+
+            /*
                 If this is a heredoc, PHP will tokenize the whole
                 thing which causes problems when heredocs don't
                 contain real PHP code, which is almost never.
@@ -750,9 +783,9 @@ class PHP extends Tokenizer
                 && $tokens[($stackPtr + 2)][0] === T_STRING
                 && strtolower($tokens[($stackPtr + 2)][1]) === 'from'
             ) {
-                // Could be multi-line, so just just the token stack.
-                $token[0] = T_YIELD_FROM;
-                $token[1] = $token[1].$tokens[($stackPtr + 1)][1].$tokens[($stackPtr + 2)][1];
+                // Could be multi-line, so just the token stack.
+                $token[0]  = T_YIELD_FROM;
+                $token[1] .= $tokens[($stackPtr + 1)][1].$tokens[($stackPtr + 2)][1];
 
                 if (PHP_CODESNIFFER_VERBOSITY > 1) {
                     for ($i = ($stackPtr + 1); $i <= ($stackPtr + 2); $i++) {
@@ -785,8 +818,8 @@ class PHP extends Tokenizer
                     && strtolower($tokens[($stackPtr + 2)][1]) === 'from'
                 ) {
                     // Could be multi-line, so just just the token stack.
-                    $token[0] = T_YIELD_FROM;
-                    $token[1] = $token[1].$tokens[($stackPtr + 1)][1].$tokens[($stackPtr + 2)][1];
+                    $token[0]  = T_YIELD_FROM;
+                    $token[1] .= $tokens[($stackPtr + 1)][1].$tokens[($stackPtr + 2)][1];
 
                     if (PHP_CODESNIFFER_VERBOSITY > 1) {
                         for ($i = ($stackPtr + 1); $i <= ($stackPtr + 2); $i++) {
@@ -970,7 +1003,7 @@ class PHP extends Tokenizer
                         $newToken['code'] = T_NULLABLE;
                         $newToken['type'] = 'T_NULLABLE';
                         break;
-                    } else if (in_array($tokenType, [T_OPEN_TAG, T_OPEN_TAG_WITH_ECHO, '=', '{', ';']) === true) {
+                    } else if (in_array($tokenType, [T_OPEN_TAG, T_OPEN_TAG_WITH_ECHO, '=', '{', ';'], true) === true) {
                         $newToken['code'] = T_INLINE_THEN;
                         $newToken['type'] = 'T_INLINE_THEN';
 
@@ -1063,7 +1096,7 @@ class PHP extends Tokenizer
                             // Non-empty content.
                             if (is_array($tokens[$x]) === true && $tokens[$x][0] === T_USE) {
                                 // Found a use statements, so search ahead for the closing parenthesis.
-                                for ($x = ($x + 1); $x < $numTokens; $x++) {
+                                for ($x += 1; $x < $numTokens; $x++) {
                                     if (is_array($tokens[$x]) === false && $tokens[$x] === ')') {
                                         continue(2);
                                     }
@@ -1090,11 +1123,11 @@ class PHP extends Tokenizer
                         $allowed += Util\Tokens::$emptyTokens;
 
                         // Find the start of the return type.
-                        for ($x = ($x + 1); $x < $numTokens; $x++) {
+                        for ($x += 1; $x < $numTokens; $x++) {
                             if (is_array($tokens[$x]) === true
                                 && isset(Util\Tokens::$emptyTokens[$tokens[$x][0]]) === true
                             ) {
-                                // Whitespace or coments before the return type.
+                                // Whitespace or comments before the return type.
                                 continue;
                             }
 
@@ -1250,6 +1283,7 @@ class PHP extends Tokenizer
                         T_NAMESPACE            => true,
                         T_PAAMAYIM_NEKUDOTAYIM => true,
                     ];
+
                     if (isset($context[$finalTokens[$lastNotEmptyToken]['code']]) === true) {
                         // Special case for syntax like: return new self
                         // where self should not be a string.
@@ -1389,7 +1423,7 @@ class PHP extends Tokenizer
                 // and T_CONST.
                 if (($newToken['code'] === T_FUNCTION
                     || $newToken['code'] === T_CONST)
-                    && $finalTokens[$lastNotEmptyToken]['code'] === T_USE
+                    && ($finalTokens[$lastNotEmptyToken]['code'] === T_USE || $insideUseGroup === true)
                 ) {
                     $newToken['code'] = T_STRING;
                     $newToken['type'] = 'T_STRING';
@@ -1941,6 +1975,9 @@ class PHP extends Tokenizer
             break;
         case '|':
             $newToken['type'] = 'T_BITWISE_OR';
+            break;
+        case '~':
+            $newToken['type'] = 'T_BITWISE_NOT';
             break;
         case '<':
             $newToken['type'] = 'T_LESS_THAN';
