@@ -1,28 +1,18 @@
 {
-  "name": "roots/bedrock",
+  "name": "carlalexander/bedrock-pantheon-standalone",
   "type": "project",
   "license": "MIT",
-  "description": "WordPress boilerplate with modern development tools, easier configuration, and an improved folder structure",
-  "homepage": "https://roots.io/bedrock/",
+  "description": "WordPress project template for using Bedrock with Pantheon and without any external services for code deployment",
   "authors": [
     {
-      "name": "Scott Walkinshaw",
-      "email": "scott.walkinshaw@gmail.com",
-      "homepage": "https://github.com/swalkinshaw"
-    },
-    {
-      "name": "Ben Word",
-      "email": "ben@benword.com",
-      "homepage": "https://github.com/retlehs"
+      "name": "Carl Alexander",
+      "email": "contact@carlalexander.ca",
+      "homepage": "https://carlalexander.ca"
     }
   ],
   "keywords": [
-    "bedrock", "roots", "wordpress", "stack", "composer", "vagrant", "wp"
+    "bedrock", "composer", "pantheon", "wordpress", "wp"
   ],
-  "support": {
-    "issues": "https://github.com/roots/bedrock/issues",
-    "forum": "https://discourse.roots.io/category/bedrock"
-  },
   "config": {
     "preferred-install": "dist"
   },
